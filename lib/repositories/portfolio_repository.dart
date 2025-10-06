@@ -15,7 +15,21 @@ class PortfolioRepository {
       }
 
       final List<dynamic> jsonList = json.decode(portfolioJson);
-      return jsonList.map((json) => PortfolioItem.fromJson(json)).toList();
+      final portfolio = jsonList.map((json) => PortfolioItem.fromJson(json)).toList();
+      
+      // Check if portfolio contains old incorrect coin IDs and clear if so
+      final hasOldIds = portfolio.any((item) => 
+        item.coinId == 'btc' || item.coinId == 'bnb' || item.coinId == 'eth' ||
+        item.coinId == 'xrp' || item.coinId == 'ada' || item.coinId == 'sol'
+      );
+      
+      if (hasOldIds) {
+        print('[PortfolioRepository] 🔄 Found old coin IDs, clearing portfolio for migration...');
+        await clearPortfolio();
+        return [];
+      }
+      
+      return portfolio;
     } catch (e) {
       throw Exception('Error loading portfolio: $e');
     }
@@ -77,6 +91,16 @@ class PortfolioRepository {
       }
     } catch (e) {
       throw Exception('Error updating portfolio item: $e');
+    }
+  }
+
+  Future<void> clearPortfolio() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_portfolioKey);
+      print('[PortfolioRepository] 🗑️ Portfolio cleared successfully');
+    } catch (e) {
+      throw Exception('Error clearing portfolio: $e');
     }
   }
 }

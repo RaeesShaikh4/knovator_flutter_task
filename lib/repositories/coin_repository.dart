@@ -14,20 +14,32 @@ class CoinRepository {
   static const Duration _rateLimitDelay = Duration(seconds: 10);
 
   Future<List<Coin>> getAllCoins() async {
+    print('[CoinRepository] 🚀 Starting getAllCoins API call...');
     try {
+      final url = '$_baseUrl$_coinsListEndpoint';
+      print('[CoinRepository] 📡 API URL: $url');
+      
       final response = await http.get(
-        Uri.parse('$_baseUrl$_coinsListEndpoint'),
+        Uri.parse(url),
         headers: {'Accept': 'application/json'},
       );
       
+      print('[CoinRepository] 📊 Response Status: ${response.statusCode}');
+      print('[CoinRepository] 📏 Response Body Length: ${response.body.length}');
+      
       if (response.statusCode == 200) {
+        print('[CoinRepository] ✅ Successfully received response');
         final List<dynamic> jsonList = json.decode(response.body);
+        print('[CoinRepository] 📋 Total coins in response: ${jsonList.length}');
+        
         final List<Coin> coins = [];
         const int chunkSize = 1000;
         
         for (int i = 0; i < jsonList.length; i += chunkSize) {
           final end = (i + chunkSize < jsonList.length) ? i + chunkSize : jsonList.length;
           final chunk = jsonList.sublist(i, end);
+          
+          print('[CoinRepository] 🔄 Processing chunk ${(i / chunkSize).floor() + 1}/${(jsonList.length / chunkSize).ceil()}: ${chunk.length} items');
           
           final chunkCoins = chunk.map((json) => Coin.fromJson(json)).toList();
           coins.addAll(chunkCoins);
@@ -37,13 +49,18 @@ class CoinRepository {
           }
         }
         
+        print('[CoinRepository] 🏗️ Building CoinIndex with ${coins.length} coins...');
         _coinIndex = CoinIndex.fromCoins(coins);
+        print('[CoinRepository] ✅ CoinIndex built successfully');
         
         return coins;
       } else {
+        print('[CoinRepository] ❌ API Error: ${response.statusCode}');
+        print('[CoinRepository] 📄 Response Body: ${response.body}');
         throw Exception('Failed to load coins: ${response.statusCode}');
       }
     } catch (e) {
+      print('[CoinRepository] 💥 Exception in getAllCoins: $e');
       throw Exception('Error fetching coins: $e');
     }
   }
@@ -59,26 +76,79 @@ class CoinRepository {
   }
 
   Future<List<Coin>> getPopularCoinsFast() async {
+    print('[CoinRepository] ⚡ Loading popular coins fast...');
     try {
-      const popularSymbols = {
-        'btc', 'eth', 'bnb', 'xrp', 'ada', 'sol', 'doge', 'dot', 'dai', 'avax',
-        'shib', 'matic', 'ltc', 'link', 'atom', 'uni', 'etc', 'xlm', 'bch', 'near',
-        'algo', 'vet', 'fil', 'trx', 'icp', 'hbar', 'mana', 'sand', 'axs', 'flow',
-        'theta', 'ftm', 'xtz', 'egld', 'klay', 'crv', 'comp', 'mkr', 'snx', 'aave',
-        'yfi', 'sushi', '1inch', 'enj', 'bat', 'zec', 'dash', 'xmr', 'neo', 'qtum'
+      // Using actual CoinGecko coin IDs instead of symbols
+      const popularCoinsData = {
+        'bitcoin': {'symbol': 'btc', 'name': 'Bitcoin'},
+        'ethereum': {'symbol': 'eth', 'name': 'Ethereum'},
+        'binancecoin': {'symbol': 'bnb', 'name': 'BNB'},
+        'ripple': {'symbol': 'xrp', 'name': 'XRP'},
+        'cardano': {'symbol': 'ada', 'name': 'Cardano'},
+        'solana': {'symbol': 'sol', 'name': 'Solana'},
+        'dogecoin': {'symbol': 'doge', 'name': 'Dogecoin'},
+        'polkadot': {'symbol': 'dot', 'name': 'Polkadot'},
+        'dai': {'symbol': 'dai', 'name': 'Dai'},
+        'avalanche-2': {'symbol': 'avax', 'name': 'Avalanche'},
+        'shiba-inu': {'symbol': 'shib', 'name': 'Shiba Inu'},
+        'matic-network': {'symbol': 'matic', 'name': 'Polygon'},
+        'litecoin': {'symbol': 'ltc', 'name': 'Litecoin'},
+        'chainlink': {'symbol': 'link', 'name': 'Chainlink'},
+        'cosmos': {'symbol': 'atom', 'name': 'Cosmos'},
+        'uniswap': {'symbol': 'uni', 'name': 'Uniswap'},
+        'ethereum-classic': {'symbol': 'etc', 'name': 'Ethereum Classic'},
+        'stellar': {'symbol': 'xlm', 'name': 'Stellar'},
+        'bitcoin-cash': {'symbol': 'bch', 'name': 'Bitcoin Cash'},
+        'near': {'symbol': 'near', 'name': 'NEAR Protocol'},
+        'algorand': {'symbol': 'algo', 'name': 'Algorand'},
+        'vechain': {'symbol': 'vet', 'name': 'VeChain'},
+        'filecoin': {'symbol': 'fil', 'name': 'Filecoin'},
+        'tron': {'symbol': 'trx', 'name': 'TRON'},
+        'internet-computer': {'symbol': 'icp', 'name': 'Internet Computer'},
+        'hedera-hashgraph': {'symbol': 'hbar', 'name': 'Hedera'},
+        'decentraland': {'symbol': 'mana', 'name': 'Decentraland'},
+        'the-sandbox': {'symbol': 'sand', 'name': 'The Sandbox'},
+        'axie-infinity': {'symbol': 'axs', 'name': 'Axie Infinity'},
+        'flow': {'symbol': 'flow', 'name': 'Flow'},
+        'theta-token': {'symbol': 'theta', 'name': 'Theta Network'},
+        'fantom': {'symbol': 'ftm', 'name': 'Fantom'},
+        'tezos': {'symbol': 'xtz', 'name': 'Tezos'},
+        'elrond-erd-2': {'symbol': 'egld', 'name': 'MultiversX'},
+        'klay-token': {'symbol': 'klay', 'name': 'Klaytn'},
+        'curve-dao-token': {'symbol': 'crv', 'name': 'Curve DAO Token'},
+        'compound-governance-token': {'symbol': 'comp', 'name': 'Compound'},
+        'maker': {'symbol': 'mkr', 'name': 'Maker'},
+        'havven': {'symbol': 'snx', 'name': 'Synthetix'},
+        'aave': {'symbol': 'aave', 'name': 'Aave'},
+        'yearn-finance': {'symbol': 'yfi', 'name': 'yearn.finance'},
+        'sushi': {'symbol': 'sushi', 'name': 'SushiSwap'},
+        '1inch': {'symbol': '1inch', 'name': '1inch'},
+        'enjincoin': {'symbol': 'enj', 'name': 'Enjin Coin'},
+        'basic-attention-token': {'symbol': 'bat', 'name': 'Basic Attention Token'},
+        'zcash': {'symbol': 'zec', 'name': 'Zcash'},
+        'dash': {'symbol': 'dash', 'name': 'Dash'},
+        'monero': {'symbol': 'xmr', 'name': 'Monero'},
+        'neo': {'symbol': 'neo', 'name': 'NEO'},
+        'qtum': {'symbol': 'qtum', 'name': 'Qtum'}
       };
-      
+
+      print('[CoinRepository] 📋 Popular coins: ${popularCoinsData.length} coins');
       final popularCoins = <Coin>[];
-      for (final symbol in popularSymbols) {
+      for (final entry in popularCoinsData.entries) {
+        final coinId = entry.key;
+        final data = entry.value;
         popularCoins.add(Coin(
-          id: symbol,
-          symbol: symbol,
-          name: _getCoinName(symbol),
+          id: coinId,
+          symbol: data['symbol']!,
+          name: data['name']!,
         ));
+        print('[CoinRepository] 🪙 Added: $coinId (${data['symbol']}) - ${data['name']}');
       }
-      
+
+      print('[CoinRepository] ✅ Generated ${popularCoins.length} popular coins');
       return popularCoins;
     } catch (e) {
+      print('[CoinRepository] 💥 Exception in getPopularCoinsFast: $e');
       throw Exception('Error loading popular coins: $e');
     }
   }
@@ -141,7 +211,11 @@ class CoinRepository {
   }
 
   Future<Map<String, PriceData>> getPrices(List<String> coinIds) async {
+    print('[CoinRepository] 💰 Starting getPrices API call...');
+    print('[CoinRepository] 🪙 Requested coin IDs: $coinIds');
+    
     if (coinIds.isEmpty) {
+      print('[CoinRepository] ⚠️ No coin IDs provided, returning empty map');
       return {};
     }
 
@@ -149,6 +223,7 @@ class CoinRepository {
       final timeSinceLastRequest = DateTime.now().difference(_lastPriceRequest!);
       if (timeSinceLastRequest < _rateLimitDelay) {
         final waitTime = _rateLimitDelay - timeSinceLastRequest;
+        print('[CoinRepository] ⏳ Rate limiting: waiting ${waitTime.inSeconds} seconds...');
         await Future.delayed(waitTime);
       }
     }
@@ -157,6 +232,7 @@ class CoinRepository {
       final idsParam = coinIds.join(',');
       final url = '$_baseUrl$_priceEndpoint?ids=$idsParam&vs_currencies=usd';
       
+      print('[CoinRepository] 📡 Price API URL: $url');
       _lastPriceRequest = DateTime.now();
       
       final response = await http.get(
@@ -164,27 +240,50 @@ class CoinRepository {
         headers: {'Accept': 'application/json'},
       );
 
+      print('[CoinRepository] 📊 Price Response Status: ${response.statusCode}');
+      print('[CoinRepository] 📏 Price Response Body Length: ${response.body.length}');
+
       if (response.statusCode == 200) {
+        print('[CoinRepository] ✅ Successfully received price data');
+        print('[CoinRepository] 📄 Raw Response Body: ${response.body}');
         final Map<String, dynamic> jsonData = json.decode(response.body);
+        print('[CoinRepository] 📋 Price data for ${jsonData.length} coins');
+        print('[CoinRepository] 🔍 JSON Keys: ${jsonData.keys.toList()}');
         
         final Map<String, PriceData> prices = {};
         
+        if (jsonData.isEmpty) {
+          print('[CoinRepository] ⚠️ WARNING: Empty response from API!');
+          print('[CoinRepository] 🔍 Requested coin IDs: $coinIds');
+          print('[CoinRepository] 🔍 API URL was: $url');
+        }
+        
         jsonData.forEach((coinId, data) {
+          print('[CoinRepository] 🔍 Processing $coinId: $data');
           prices[coinId] = PriceData.fromJson(coinId, data);
+          print('[CoinRepository] 💵 $coinId: \$${data['usd']}');
         });
         
+        print('[CoinRepository] ✅ Successfully parsed ${prices.length} prices');
         return prices;
       } else if (response.statusCode == 429) {
+        print('[CoinRepository] ⚠️ Rate limit exceeded (429), using fallback prices');
         return _getFallbackPrices(coinIds);
       } else {
+        print('[CoinRepository] ❌ API Error: ${response.statusCode}');
+        print('[CoinRepository] 📄 Response Body: ${response.body}');
+        print('[CoinRepository] 🔄 Using fallback prices');
         return _getFallbackPrices(coinIds);
       }
     } catch (e) {
+      print('[CoinRepository] 💥 Exception in getPrices: $e');
+      print('[CoinRepository] 🔄 Using fallback prices');
       return _getFallbackPrices(coinIds);
     }
   }
 
   Map<String, PriceData> _getFallbackPrices(List<String> coinIds) {
+    print('[CoinRepository] 🔄 Generating fallback prices for ${coinIds.length} coins...');
     final Map<String, PriceData> fallbackPrices = {};
     
     final Map<String, double> samplePrices = {
@@ -218,8 +317,11 @@ class CoinRepository {
         coinId: coinId,
         price: price,
       );
+      
+      print('[CoinRepository] 💰 Fallback price for $coinId: \$${price.toStringAsFixed(2)}');
     }
     
+    print('[CoinRepository] ✅ Generated ${fallbackPrices.length} fallback prices');
     return fallbackPrices;
   }
 

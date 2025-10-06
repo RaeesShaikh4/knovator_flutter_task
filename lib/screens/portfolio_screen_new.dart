@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../bloc/portfolio/portfolio_bloc.dart';
 import '../bloc/portfolio/portfolio_event.dart';
 import '../bloc/portfolio/portfolio_state.dart';
+import '../bloc/coin_list/coin_list_bloc.dart';
 import '../repositories/portfolio_repository.dart';
 import '../repositories/coin_repository.dart';
 import '../widgets/portfolio_item_card.dart';
@@ -70,7 +71,10 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       context: context,
       builder: (context) => BlocProvider.value(
         value: _portfolioBloc,
-        child: const AddAssetDialog(),
+        child: BlocProvider.value(
+          value: CoinListBloc(coinRepository: CoinRepository()),
+          child: const AddAssetDialog(),
+        ),
       ),
     );
   }
@@ -81,7 +85,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       builder: (context) => RemoveAssetDialog(portfolioItem: item),
     ).then((shouldRemove) {
       if (shouldRemove == true) {
-        context.read<PortfolioBloc>().add(RemovePortfolioItem(coinId: item.coinId));
+        _portfolioBloc.add(RemovePortfolioItem(coinId: item.coinId));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${item.coinName} removed from portfolio'),

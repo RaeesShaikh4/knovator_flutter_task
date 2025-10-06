@@ -33,40 +33,9 @@ class PortfolioItemCard extends StatelessWidget {
           ),
         ),
         confirmDismiss: (direction) async {
-          return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Remove Asset'),
-              content: Text(
-                'Are you sure you want to remove ${item.coinName} from your portfolio?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('Remove'),
-                ),
-              ],
-            ),
-          );
-        },
-        onDismissed: (direction) {
+          // Let the custom dialog handle confirmation
           onRemove();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${item.coinName} removed from portfolio'),
-              action: SnackBarAction(
-                label: 'Undo',
-                onPressed: () {
-                  // TODO: Implement undo functionality
-                },
-              ),
-            ),
-          );
+          return false; // Don't auto-dismiss, let custom dialog handle it
         },
         child: Container(
           decoration: BoxDecoration(

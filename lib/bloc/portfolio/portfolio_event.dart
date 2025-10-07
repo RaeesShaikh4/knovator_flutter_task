@@ -1,4 +1,5 @@
 import '../../models/portfolio_item.dart';
+import '../../models/sort_option.dart';
 
 abstract class PortfolioEvent {}
 
@@ -28,4 +29,10 @@ class UpdatePrices extends PortfolioEvent {
   final Map<String, double> prices;
 
   UpdatePrices({required this.prices});
+}
+
+class SortPortfolio extends PortfolioEvent {
+  final SortOption sortOption;
+
+  SortPortfolio({required this.sortOption});
 }

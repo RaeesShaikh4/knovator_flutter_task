@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../models/coin.dart';
 import '../models/price_data.dart';
@@ -12,6 +13,13 @@ class CoinRepository {
   CoinIndex? _coinIndex;
   DateTime? _lastPriceRequest;
   static const Duration _rateLimitDelay = Duration(seconds: 10);
+  
+  // Periodic update functionality
+  Timer? _periodicUpdateTimer;
+  static const Duration _updateInterval = Duration(minutes: 5);
+  static const Duration _maxUpdateInterval = Duration(minutes: 30);
+  Duration _currentUpdateInterval = _updateInterval;
+  int _consecutiveFailures = 0;
 
   Future<List<Coin>> getAllCoins() async {
     print('[CoinRepository] 🚀 Starting getAllCoins API call...');
@@ -374,4 +382,74 @@ class CoinRepository {
   }
 
   bool get isIndexAvailable => _coinIndex != null;
+
+  // Periodic update functionality
+  void startPeriodicUpdates(Function(List<String>) onUpdate) {
+    print('[CoinRepository] ⏰ Starting periodic price updates every ${_currentUpdateInterval.inMinutes} minutes');
+    _periodicUpdateTimer?.cancel();
+    _periodicUpdateTimer = Timer.periodic(_currentUpdateInterval, (timer) async {
+      await _performPeriodicUpdate(onUpdate);
+    });
+  }
+
+  void stopPeriodicUpdates() {
+    print('[CoinRepository] ⏹️ Stopping periodic price updates');
+    _periodicUpdateTimer?.cancel();
+    _periodicUpdateTimer = null;
+  }
+
+  Future<void> _performPeriodicUpdate(Function(List<String>) onUpdate) async {
+    try {
+      print('[CoinRepository] 🔄 Performing periodic price update...');
+      
+      // Get current portfolio coin IDs
+      final coinIds = await _getCurrentPortfolioCoinIds();
+      if (coinIds.isEmpty) {
+        print('[CoinRepository] 📭 No coins in portfolio, skipping update');
+        return;
+      }
+
+      // Fetch prices
+      final prices = await getPrices(coinIds);
+      
+      if (prices.isNotEmpty) {
+        print('[CoinRepository] ✅ Periodic update successful: ${prices.length} prices updated');
+        _consecutiveFailures = 0;
+        _currentUpdateInterval = _updateInterval; // Reset to normal interval
+        
+        // Notify listeners
+        onUpdate(coinIds);
+      } else {
+        throw Exception('No prices received');
+      }
+    } catch (e) {
+      _consecutiveFailures++;
+      print('[CoinRepository] ❌ Periodic update failed (attempt $_consecutiveFailures): $e');
+      
+      // Implement exponential backoff
+      if (_consecutiveFailures >= 3) {
+        _currentUpdateInterval = Duration(
+          minutes: (_currentUpdateInterval.inMinutes * 1.5).clamp(
+            _updateInterval.inMinutes, 
+            _maxUpdateInterval.inMinutes
+          ).toInt()
+        );
+        print('[CoinRepository] ⏳ Increasing update interval to ${_currentUpdateInterval.inMinutes} minutes due to failures');
+        
+        // Restart timer with new interval
+        stopPeriodicUpdates();
+        startPeriodicUpdates(onUpdate);
+      }
+    }
+  }
+
+  Future<List<String>> _getCurrentPortfolioCoinIds() async {
+    // This would typically be injected or accessed through a callback
+    // For now, we'll return an empty list and let the calling code provide the coin IDs
+    return [];
+  }
+
+  void dispose() {
+    stopPeriodicUpdates();
+  }
 }

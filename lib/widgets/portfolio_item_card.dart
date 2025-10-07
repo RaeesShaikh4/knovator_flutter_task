@@ -180,14 +180,61 @@ class PortfolioItemCard extends StatelessWidget {
                       ),
                     const SizedBox(height: 8),
                     if (item.totalValue != null)
-                      Text(
-                        NumberFormat.currency(symbol: '\$', decimalDigits: 2)
-                            .format(item.totalValue),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            NumberFormat.currency(symbol: '\$', decimalDigits: 2)
+                                .format(item.totalValue),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                          if (item.priceChange != null && item.priceChangePercent != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: item.priceChange! >= 0 
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: item.priceChange! >= 0 
+                                    ? Colors.green.withValues(alpha: 0.3)
+                                    : Colors.red.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    item.priceChange! >= 0 
+                                      ? Icons.trending_up 
+                                      : Icons.trending_down,
+                                    size: 14,
+                                    color: item.priceChange! >= 0 
+                                      ? Colors.green[700]
+                                      : Colors.red[700],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${item.priceChange! >= 0 ? '+' : ''}${item.priceChangePercent!.toStringAsFixed(2)}%',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: item.priceChange! >= 0 
+                                        ? Colors.green[700]
+                                        : Colors.red[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       )
                     else
                       const Text(

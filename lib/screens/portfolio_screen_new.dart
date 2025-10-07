@@ -11,6 +11,7 @@ import '../widgets/portfolio_item_card.dart';
 import '../widgets/add_asset_dialog.dart';
 import '../widgets/remove_asset_dialog.dart';
 import '../models/portfolio_item.dart';
+import '../models/sort_option.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
@@ -100,6 +101,27 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     _portfolioBloc.add(RefreshPortfolio());
   }
 
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sort Portfolio'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: SortOption.values.map((option) {
+            return ListTile(
+              title: Text(option.displayName),
+              onTap: () {
+                _portfolioBloc.add(SortPortfolio(sortOption: option));
+                Navigator.of(context).pop();
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,6 +208,23 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            // Sort Button
+            Container(
+              margin: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.sort, color: Colors.white, size: 22),
+                onPressed: _showSortDialog,
               ),
             ),
 
@@ -493,7 +532,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
             if (state.portfolio.isEmpty)
               _buildEmptyState()
             else
-              _buildPortfolioList(state.portfolio),
+              _buildPortfolioList(state.sortedPortfolio),
           ],
         ),
       ),

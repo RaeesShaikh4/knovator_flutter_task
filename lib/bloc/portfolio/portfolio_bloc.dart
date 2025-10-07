@@ -16,10 +16,11 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
         super(PortfolioInitial()) {
     on<LoadPortfolio>(_onLoadPortfolio);
     on<RefreshPortfolio>(_onRefreshPortfolio);
-    on<AddPortfolioItem>(_onAddPortfolioItem);
-    on<RemovePortfolioItem>(_onRemovePortfolioItem);
-    on<UpdatePortfolioItem>(_onUpdatePortfolioItem);
-    on<UpdatePrices>(_onUpdatePrices);
+        on<AddPortfolioItem>(_onAddPortfolioItem);
+        on<RemovePortfolioItem>(_onRemovePortfolioItem);
+        on<UpdatePortfolioItem>(_onUpdatePortfolioItem);
+        on<UpdatePrices>(_onUpdatePrices);
+        on<SortPortfolio>(_onSortPortfolio);
   }
 
   Future<void> _onLoadPortfolio(
@@ -39,14 +40,25 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
       final coinIds = portfolio.map((item) => item.coinId).toList();
       final prices = await _coinRepository.getPrices(coinIds);
       
-      // Update portfolio with current prices
+      // Update portfolio with current prices and track changes
       final updatedPortfolio = portfolio.map((item) {
         final price = prices[item.coinId]?.price;
         final totalValue = price != null ? item.quantity * price : 0.0;
         
+        // Calculate price change
+        double? priceChange;
+        double? priceChangePercent;
+        if (price != null && item.currentPrice != null) {
+          priceChange = price - item.currentPrice!;
+          priceChangePercent = (priceChange / item.currentPrice!) * 100;
+        }
+        
         return item.copyWith(
+          previousPrice: item.currentPrice,
           currentPrice: price,
           totalValue: totalValue,
+          priceChange: priceChange,
+          priceChangePercent: priceChangePercent,
         );
       }).toList();
 
@@ -91,14 +103,25 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
       final coinIds = portfolio.map((item) => item.coinId).toList();
       final prices = await _coinRepository.getPrices(coinIds);
       
-      // Update portfolio with current prices
+      // Update portfolio with current prices and track changes
       final updatedPortfolio = portfolio.map((item) {
         final price = prices[item.coinId]?.price;
         final totalValue = price != null ? item.quantity * price : 0.0;
         
+        // Calculate price change
+        double? priceChange;
+        double? priceChangePercent;
+        if (price != null && item.currentPrice != null) {
+          priceChange = price - item.currentPrice!;
+          priceChangePercent = (priceChange / item.currentPrice!) * 100;
+        }
+        
         return item.copyWith(
+          previousPrice: item.currentPrice,
           currentPrice: price,
           totalValue: totalValue,
+          priceChange: priceChange,
+          priceChangePercent: priceChangePercent,
         );
       }).toList();
 
@@ -205,5 +228,15 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
       portfolio: updatedPortfolio,
       totalValue: totalPortfolioValue,
     ));
+  }
+
+  void _onSortPortfolio(
+    SortPortfolio event,
+    Emitter<PortfolioState> emit,
+  ) {
+    if (state is! PortfolioLoaded) return;
+    
+    final currentState = state as PortfolioLoaded;
+    emit(currentState.copyWith(sortOption: event.sortOption));
   }
 }

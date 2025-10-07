@@ -5,6 +5,9 @@ class PortfolioItem {
   final double quantity;
   final double? currentPrice;
   final double? totalValue;
+  final double? previousPrice;
+  final double? priceChange;
+  final double? priceChangePercent;
 
   const PortfolioItem({
     required this.coinId,
@@ -13,6 +16,9 @@ class PortfolioItem {
     required this.quantity,
     this.currentPrice,
     this.totalValue,
+    this.previousPrice,
+    this.priceChange,
+    this.priceChangePercent,
   });
 
   PortfolioItem copyWith({
@@ -22,6 +28,9 @@ class PortfolioItem {
     double? quantity,
     double? currentPrice,
     double? totalValue,
+    double? previousPrice,
+    double? priceChange,
+    double? priceChangePercent,
   }) {
     return PortfolioItem(
       coinId: coinId ?? this.coinId,
@@ -30,6 +39,9 @@ class PortfolioItem {
       quantity: quantity ?? this.quantity,
       currentPrice: currentPrice ?? this.currentPrice,
       totalValue: totalValue ?? this.totalValue,
+      previousPrice: previousPrice ?? this.previousPrice,
+      priceChange: priceChange ?? this.priceChange,
+      priceChangePercent: priceChangePercent ?? this.priceChangePercent,
     );
   }
 
@@ -45,6 +57,15 @@ class PortfolioItem {
       totalValue: json['totalValue'] != null 
           ? (json['totalValue'] as num).toDouble() 
           : null,
+      previousPrice: json['previousPrice'] != null 
+          ? (json['previousPrice'] as num).toDouble() 
+          : null,
+      priceChange: json['priceChange'] != null 
+          ? (json['priceChange'] as num).toDouble() 
+          : null,
+      priceChangePercent: json['priceChangePercent'] != null 
+          ? (json['priceChangePercent'] as num).toDouble() 
+          : null,
     );
   }
 
@@ -56,6 +77,9 @@ class PortfolioItem {
       'quantity': quantity,
       'currentPrice': currentPrice,
       'totalValue': totalValue,
+      'previousPrice': previousPrice,
+      'priceChange': priceChange,
+      'priceChangePercent': priceChangePercent,
     };
   }
 
